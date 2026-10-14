@@ -1,0 +1,15 @@
+{
+  "name": "terra-nova-firebase-api",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "engines": { "node": "24" },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "firebase-admin": "^13.6.0",
+    "firebase-functions": "^7.0.0",
+    "helmet": "^8.1.0",
+    "nodemailer": "^7.0.0"
+  }
+}

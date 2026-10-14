@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1500" viewBox="0 0 1400 1500">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#d8e7d8"/><stop offset="1" stop-color="#f1e9ca"/></linearGradient>
+ <linearGradient id="land" x2=".4" y2="1"><stop stop-color="#728950"/><stop offset="1" stop-color="#1d4635"/></linearGradient>
+ <linearGradient id="warm" x2="1" y2="1"><stop stop-color="#acaf64"/><stop offset="1" stop-color="#6a8550"/></linearGradient>
+ <filter id="texture"><feTurbulence type="fractalNoise" baseFrequency=".38" numOctaves="3" seed="12"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".085"/></feComponentTransfer><feBlend in="SourceGraphic" mode="multiply"/></filter>
+</defs>
+<g filter="url(#texture)">
+<rect width="1400" height="1500" fill="url(#sky)"/>
+<circle cx="1000" cy="310" r="128" fill="#fff2ce"/>
+<path d="M0 520Q250 340 570 500T1400 410V900H0Z" fill="#91aba0"/>
+<path d="M0 620Q320 350 630 555T1400 525V990H0Z" fill="#6e937e"/>
+<path d="M0 660Q600 390 1400 790V1500H0Z" fill="url(#warm)"/>
+<path d="M1400 630Q850 580 0 1190V1500H1400Z" fill="url(#land)"/>
+<g fill="none" stroke="#a8b977" stroke-width="9" opacity=".56">
+<path d="M1430 695Q875 615-60 1245"/><path d="M1430 750Q850 655-60 1320"/><path d="M1430 820Q850 710-60 1410"/><path d="M1430 900Q850 780-10 1500"/><path d="M1430 990Q950 840 180 1550"/><path d="M1430 1090Q1040 950 420 1560"/><path d="M1430 1200Q1200 1080 720 1560"/><path d="M1430 1320Q1390 1240 1050 1560"/>
+</g>
+<g fill="none" stroke="#d0ca88" stroke-width="6" opacity=".65"><path d="M-60 720Q450 495 1120 690"/><path d="M-60 780Q350 570 925 695"/><path d="M-60 850Q260 675 735 730"/><path d="M-60 930Q210 785 530 800"/><path d="M-60 1020Q130 900 345 900"/></g>
+<path d="M690 695Q560 820 760 980T710 1500" stroke="#d8c299" stroke-width="28" fill="none"/>
+<g fill="#254d3c"><ellipse cx="250" cy="560" rx="40" ry="78"/><ellipse cx="306" cy="572" rx="33" ry="61"/><ellipse cx="1180" cy="625" rx="32" ry="62"/><ellipse cx="1230" cy="648" rx="28" ry="54"/></g>
+<g stroke="#4b5737" stroke-width="10"><path d="M250 585v62M306 590v62M1180 650v38M1230 670v35"/></g>
+<path d="M985 675v-53h84v53" fill="#efebd4"/><path d="m974 625 53-37 53 37" fill="#735b45"/><rect x="1018" y="644" width="17" height="31" fill="#5b6a51"/>
+<g stroke="#446657" fill="none" stroke-width="3"><path d="m535 290 16-7 16 7M590 320l12-6 13 6"/></g>
+</g></svg>

@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // O navegador nao acessa colecoes diretamente. O servidor usa IAM e
+    // verifica sessao, assinatura e proprietario em todas as operacoes.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
