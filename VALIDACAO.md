@@ -1,3 +1,7 @@
+# Versão atual: Firebase Spark gratuito
+
+A configuração padrão foi substituída por Hosting + Authentication + Firestore, sem Functions. As seções sobre Blaze abaixo são histórico da versão anterior. Consulte FIREBASE.md para a publicação atual.
+
 # Validação da entrega
 
 Validado nesta instância em 13/10/2026:
@@ -46,3 +50,13 @@ Validado nesta instância em 13/10/2026:
 - Detectado e corrigido problema real de sessão: Firebase Hosting retirava `Set-Cookie` de respostas com `no-store` sem `private`. A API agora responde `private, no-store` e o Hosting preserva `__session`.
 - **`npm run test:firebase` passou com código 0:** Hosting + Functions + Firestore inicializados; cadastro, sessão, liberação administrativa, sensor, leitura, isolamento entre proprietários, contatos/newsletter, redefinição única de senha, suspensão, logout e regras que impedem acesso direto às contas exercitados. Nenhum teste gravou no projeto real.
 - Publicação externa continua pendente de autenticação e faturamento. A captura enviada mostra o plano Spark. Nenhum link público foi apresentado como publicado.
+
+## Adaptação Spark em 14/10/2026
+
+- Cloud Functions removido da configuração padrão e do comando de deploy. Não há criação de Secret Manager, TTL pago ou habilitação de faturamento.
+- Cadastro/login e recuperação de senha usam Authentication. Perfis e permissões ficam no Firestore; listeners entregam mudanças em tempo real.
+- Regras testadas bloqueiam autopromoção de papel, autoativação de assinatura, leitura de outro proprietário, escrita de usuário comum, sensor falso/desativado, indicadores fora da faixa e acesso público a mensagens privadas. Contato/newsletter só aceitam dados limitados e com consentimento.
+- Teste Spark integrou Hosting + Auth + Firestore com Chromium, incluindo cadastro, admin, assinatura, sensor pelo protocolo REST real, relatório PDF e contato. A recuperação nativa também passou: código de ação gerado pelo Auth, redefinição pelo navegador e login com a nova senha. O emulador não comprova entrega do e-mail real.
+- O firmware Spark compilou com PlatformIO para NodeMCU ESP8266: RAM estática 31.332 bytes (38,2%) e Flash 429.891 bytes (41,2%). Envio de 10 em 10 minutos; TLS ativo; raízes Google públicas; tokens privados não impressos. Wi-Fi físico continua não testado.
+- Os oito testes do backend local e a verificação da interface em desktop/celular passaram novamente.
+- Publicação remota continua pendente: a conta autenticada está no Cloud Shell do usuário, separado desta máquina. O projeto alvo permanece terra-nova-a4343.

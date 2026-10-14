@@ -1,95 +1,79 @@
-# Publicacao no Firebase
+# Publicação gratuita no Firebase Spark
 
-Esta configuracao publica a interface em **Firebase Hosting**, a API em **Cloud Functions** (Sao Paulo, `southamerica-east1`) e os dados em **Firestore**. Login, administracao, assinatura e recepcao dos sensores usam a mesma API ja implementada. No Firebase, os dados nao dependem de disco local ou SQLite.
+A versão atual usa **Hosting + Authentication (e-mail/senha) + Firestore** no projeto **terra-nova-a4343**. O navegador recebe as mudanças do banco em tempo real e o sensor envia leituras por HTTPS com uma conta própria. A configuração padrão não publica Cloud Functions, Storage, Secret Manager ou TTL pago e não habilita faturamento.
 
-## Requisitos
+Permaneça no plano **Spark**, sem vincular faturamento. O serviço é gratuito dentro das cotas desse plano; atingir uma cota pode interromper operações. Não é uma oferta de capacidade ilimitada. Veja as [cotas do Firestore](https://firebase.google.com/docs/firestore/quotas) e os [planos do Firebase](https://firebase.google.com/pricing).
 
-- Conta Google autenticada no Firebase CLI, com permissao para criar/administrar o projeto.
-- Node.js 24 e Firebase CLI 15.33.0 ou superior.
-- Projeto com faturamento **Blaze** habilitado, exigido pelo Cloud Functions. Hosting sozinho nao executa este backend. Confirme custos e alertas no console antes de vincular faturamento; o codigo limita a funcao a 3 instancias, mas isso nao constitui um limite de gasto.
-- APIs de Firestore, Functions, Cloud Build, Artifact Registry, Secret Manager e Hosting disponiveis.
+## Preparar no console
 
-Nenhum projeto ou conta foi criado automaticamente sem autenticacao. Nao envie senhas, tokens ou chaves privadas pelo chat.
+1. Em **Authentication → Começar → Método de login**, habilite **E-mail/senha** e salve. Só essa modalidade é necessária.
+2. Em **Firestore Database**, crie o banco padrão se ainda não existir, em modo de produção. O script também pode criar esse banco se sua conta tiver permissão. Realtime Database é outro produto e não é usado por esta versão.
+3. Confirme que o projeto continua no plano Spark. Se você mudou para Blaze seguindo as instruções anteriores, volte ao Spark no console antes de prosseguir; confira com o responsável pelo faturamento possíveis gastos já ocorridos.
 
-## Caminho de publicacao
+## Atualizar e publicar pelo Cloud Shell
 
-Projeto escolhido pelo usuário: **`terra-nova-a4343`**, já registrado em `.firebaserc`. A criação foi informada pelo usuário; acesso e publicação remotos ainda dependem de autenticação. O assistente de deploy usa esse projeto e não cria outro quando esse alias está configurado.
-
-### Pelo Cloud Shell do Google
-
-Na barra direita do console Google/Firebase, o ícone `>_` abre o Cloud Shell. Entrar nele permite que você publique usando sua conta; não autentica automaticamente a sessão deste chat.
-
-1. Baixe `terra-nova-mater.zip` atualizado e envie-o ao Cloud Shell pela opção **Upload** do menu de três pontos do terminal.
-2. Habilite o plano Blaze pelo botão **Fazer upgrade** do console, se decidir usar o backend Functions. O plano Spark exibido na captura não atende ao requisito desta versão.
-3. No Cloud Shell, execute:
+Se a pasta ainda não estiver no Cloud Shell:
 
 ```sh
-unzip terra-nova-mater.zip
-cd terra-nova-mater
+git clone --branch main https://github.com/costatw/terra-gay.git
+cd terra-gay
+```
+
+Se já estiver lá:
+
+```sh
+cd ~/terra-gay
+git pull --ff-only
+```
+
+Então execute:
+
+```sh
 nvm install 24
 nvm use 24
 npm ci
-npx firebase-tools@15.33.0 login --no-localhost
-```
-
-Conclua o fluxo oficial do Google e insira eventual código apenas no terminal. Depois:
-
-```sh
-gcloud services enable firestore.googleapis.com --project terra-nova-a4343
+# Seu login Firebase no Cloud Shell já foi realizado; se necessário:
+# npx firebase-tools@15.33.0 login --no-localhost
+gcloud services enable firestore.googleapis.com identitytoolkit.googleapis.com --project terra-nova-a4343
 npm run firebase:publish
 ```
 
-O comando de publicação prepara e instala as Functions, constrói o site, registra a chave privada e executa o deploy no projeto selecionado. Se permissões da organização ou faturamento impedirem a operação, use a mensagem do Google para solicitar o ajuste ao responsável. A URL só deve ser divulgada depois de a verificação pública de saúde passar. Para operar a administração, configure a primeira conta conforme a seção abaixo.
+O comando de publicação usa o ID de `.firebaserc`, obtém/cria o aplicativo Web, salva sua configuração pública em `public/firebase-config.json`, prepara o build, publica **somente firestore,hosting** e confirma que página e configuração estão acessíveis. Ele não cria outro projeto nem habilita um plano pago. Se houver uma restrição de permissões da organização, a mensagem do Google indicará o ajuste necessário ao responsável.
 
-### Pelo seu computador ou pelo terminal deste ambiente
+A chave Web `apiKey` é configuração pública, não uma credencial administrativa. As regras e os tokens do Authentication controlam o acesso. Senhas de pessoas, credenciais dos sensores e contas de serviço não vão para esse arquivo ou para o Git.
 
-No seu computador, com o projeto baixado:
+## Criar seu primeiro administrador
 
-```sh
-npm ci
-npx firebase-tools@15.33.0 login
-```
+1. Abra o site publicado e crie sua conta pelo cadastro normal.
+2. No console **Firestore Database → Dados → users**, localize seu documento pelo e-mail. O ID do documento é seu UID do Authentication.
+3. Edite **apenas sua conta**: `role` deve ser a string `admin`, e `subscription_status` a string `active`.
+4. Volte ao site. O perfil é atualizado pelo Firestore; entre novamente se necessário.
 
-O login abre o fluxo oficial do Google. Depois, execute `npm run firebase:publish`. O assistente pergunta o ID do projeto, oferece criar um projeto novo, prepara o build e as Functions, verifica faturamento, cria o Firestore quando necessario, registra a chave de sensores no Secret Manager e publica. Ele so informa a URL publica apos deploy e verificacao de saude bem-sucedidos. A chave existente em `.env` e reaproveitada sem exibir seu valor; se nao houver uma chave, o assistente gera uma e salva um arquivo privado.
+As regras impedem que o navegador eleve o próprio papel ou libere a própria assinatura. A alteração inicial é feita pelo titular autorizado no console Google. Depois, o painel administrativo libera/suspende usuários e cadastra sensores sem acesso ao console.
 
-Se quiser executar os passos manualmente, escolha um ID globalmente unico e substitua `SEU_PROJECT_ID`:
+## Dados e sensores
 
-```sh
-npx firebase-tools@15.33.0 projects:create SEU_PROJECT_ID --display-name "Terra Nova Mater"
-```
+- Contas do site: `users/{uid}`. Perfis são criados como usuário comum e assinatura pendente. Não há senhas no Firestore.
+- Dispositivos: `devices/{id}`, com `name`, `user_id` (proprietário), `sender_uid` (conta exclusiva do sensor) e `enabled`.
+- Leituras: `readings/{id}`, com temperatura, umidade e outros indicadores realmente medidos. `read_at` e `created_at` são **timestamps**, não textos.
+- Mensagens/newsletter: `contacts`; leitura exclusiva da administração. Inscrições registram consentimento; campanhas não são disparadas automaticamente.
+- Histórico administrativo: `audit`; registros de mudança de assinatura.
 
-No [console Firebase](https://console.firebase.google.com/), vincule o faturamento Blaze ao projeto se necessario. Nao use dados de pagamento de terceiros. Crie o banco padrao Firestore na localizacao `southamerica-east1` quando disponivel para seu projeto, ou use a localizacao adequada no console. As regras deste repositorio bloqueiam acesso direto pelo navegador; o Admin SDK usa IAM.
+Uma conta ativa só lê suas leituras. Administradores veem a operação geral. A conta do dispositivo só consulta seu vínculo e cria leituras para ele; não tem acesso ao histórico ou à administração. `enabled=false` interrompe novas escritas daquele dispositivo.
 
-```sh
-npx firebase-tools@15.33.0 use --add
-node scripts/prepare-firebase.mjs
-npm --prefix firebase-functions ci
-npx firebase-tools@15.33.0 functions:secrets:set SENSOR_API_KEY --project SEU_PROJECT_ID
-npx firebase-tools@15.33.0 deploy --only firestore,functions,hosting --project SEU_PROJECT_ID
-```
+Siga [firmware/esp8266/README.md](firmware/esp8266/README.md) para preparar a placa. O novo firmware não usa mais `/functions/receiveSensorData` ou uma chave compartilhada de servidor. Ele faz login no Authentication e grava no Firestore, que verifica as permissões. Envia a cada **10 minutos** por padrão (144 registros/dia por sensor) para reduzir consumo das cotas. O painel recebe mudanças em tempo real, sem consultar todo o histórico a cada 5 segundos.
 
-A chave deve ter pelo menos 24 caracteres e deve ser inserida pelo terminal seguro ou Secret Manager, nunca colocada no codigo ou em variaveis publicas do frontend. O terminal de deploy pode pedir configuracao de retencao de imagens no Artifact Registry; use uma politica adequada para evitar acumulo de imagens antigas.
+## Recuperação de senha e assinatura
 
-## Primeiro administrador
+A recuperação usa o e-mail do Firebase Authentication e não precisa de SMTP próprio. O envio real depende da configuração/cota do Authentication; no emulador, verifica-se o código gerado e a redefinição. O template pode ser personalizado em Authentication → Templates, incluindo a URL `/reset-password` como página de ação se desejar usar a tela do site.
 
-Use uma credencial local do Google autorizada a escrever no Firestore. No seu computador, `gcloud auth application-default login` configura credenciais do Admin SDK; esse login e separado do Firebase CLI. Alternativamente, configure uma conta de servico pelo mecanismo seguro da sua hospedagem. Nunca salve arquivos de conta de servico no Git.
+A confirmação de pagamento continua manual pela equipe e as assinaturas seguem no painel. O botão abre o WhatsApp original; um checkout externo opcional pode ser definido como `checkoutUrl` na configuração pública. Essa opção não processa cartões nem confirma automaticamente um pagamento.
 
-Defina `STORAGE_BACKEND=firestore`, `GOOGLE_CLOUD_PROJECT=SEU_PROJECT_ID`, `ADMIN_EMAIL` e `ADMIN_PASSWORD` pelo ambiente privado. Entao rode `npm run create-admin`. O comando nao muda contas existentes. Contas locais SQLite nao sao importadas automaticamente.
+## Testes
 
-## Sensor por Wi-Fi
+- `npm run test:firebase`: Hosting + Authentication + Firestore, regras e navegador, sem Functions ou projeto real; requer Java 21, Chromium e CLI.
+- `npm test`: valida o backend Node/SQLite mantido para desenvolvimento local.
+- `node tests/browser-check.mjs`: interface em desktop/celular no modo local.
+- `pio run --project-dir firmware/esp8266`: compila o firmware NodeMCU ESP8266.
 
-Depois que o site estiver realmente publicado, o firmware usara o endpoint HTTPS do dominio fornecido pelo deploy com o caminho `/functions/receiveSensorData`. Cadastre o dispositivo no painel administrativo e coloque no firmware a mesma chave registrada no Secret Manager. Configure a raiz de certificado correspondente ao dominio Firebase; a raiz usada no exemplo anterior nao deve ser presumida correta para o Firebase.
-
-## E-mail e checkout
-
-Valores nao secretos podem ser definidos em `firebase-functions/.env.SEU_PROJECT_ID`: `PUBLIC_ORIGIN` (para dominio personalizado), `ALLOWED_ORIGINS` (lista de origens HTTPS proprias), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `MAIL_FROM`, `CONTACT_EMAIL` e `CHECKOUT_URL`.
-
-Se configurar SMTP, registre a senha com `firebase functions:secrets:set SMTP_PASSWORD --project SEU_PROJECT_ID` e republique Functions. Nao coloque senhas em `.env.SEU_PROJECT_ID`. Sem SMTP, o envio de recuperacao fica indisponivel e contatos continuam armazenados. Sem checkout, a assinatura continua pelo atendimento via WhatsApp e liberacao manual.
-
-## Emuladores e verificacao
-
-`npm run test:firebase` exercita Firebase Hosting + Functions + Firestore localmente num projeto `demo-terra-nova`, sem gravar em um projeto real. Requer Java 21 para o emulador Firestore e acesso ao download oficial do emulador. As credenciais temporarias do teste ficam em arquivos ignorados e sao removidas ao final.
-
-O teste usa `.firebase/emulators` para o cache e um ajuste restrito a requisições de loopback, pois o Firebase CLI encaminhava chamadas entre emuladores ao proxy externo. Requisições externas mantêm o proxy e a verificação TLS. As respostas da API usam `Cache-Control: private, no-store` para que o Hosting preserve o cookie `__session`. A pilha integrada foi validada com sucesso no emulador em 14/10/2026.
-
-Antes de divulgar a URL publica, confirme `/api/health`, login, cookie `__session`, permissao por assinatura, isolamento das leituras e uma leitura de sensor. Nao considere um deploy apenas do HTML como publicacao completa da aplicacao.
+A versão Spark foi validada nos emuladores. O teste físico de Wi-Fi e sensores exige sua placa/rede. O login no Cloud Shell não autentica esta sessão do chat; a publicação real deve ser executada no terminal autorizado, e só se considera pública após a confirmação do deploy.

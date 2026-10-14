@@ -2,7 +2,7 @@
 
 Nova apresentação do site de referência `just-terra-nova-flow.base44.app`: visual acolhedor, páginas responsivas e painel de monitoramento com usuários e administração. Implementação independente em React + Node.js 24 + SQLite. Nenhum cadastro, senha, pagamento ou histórico foi importado do Base44.
 
-**Firebase:** configuração para Hosting + Cloud Functions + Firestore adicionada. Veja [FIREBASE.md](FIREBASE.md). O SQLite continua disponível para desenvolvimento local e Docker; na publicação Firebase, o armazenamento usa Firestore. A criação do projeto e o deploy exigem autenticação Google e faturamento Blaze. Não há site público publicado ainda.
+**Publicação gratuita:** a configuração padrão usa Firebase Hosting + Authentication + Firestore no plano Spark, sem Functions ou faturamento. Veja [FIREBASE.md](FIREBASE.md). Login, administrador, assinaturas e sensores foram adaptados e validados nos emuladores. O Node/SQLite continua disponível para desenvolvimento local. Nenhum site público foi publicado por esta sessão.
 
 ## Desenvolvimento
 
@@ -21,15 +21,15 @@ O backend cria o banco em `data/terra.sqlite`. Não apague essa pasta se quiser 
 
 - Site institucional, projeto, benefícios, jornada, histórias, equipe e plano mensal de R$ 40.
 - Formulário de contato e inscrição em novidades, armazenados no painel administrativo.
-- Cadastro, login, logout, recuperação por e-mail (requer SMTP) e redefinição com link temporário de uso único.
+- Cadastro, login, logout e recuperação de senha pelo Firebase Authentication na versão Spark. No backend local, o envio usa SMTP.
 - Assinaturas pendentes, ativas e suspensas; liberação manual do pagamento pelo administrador.
 - Painel, última leitura com atualização a cada 5 segundos, histórico, médias por dia, relatórios de 30 dias e PDF real.
 - Administrador: busca/filtro de contas, liberação/suspensão, mensagens e cadastro de dispositivos vinculados a proprietários.
-- Leituras por HTTPS com chave privada e isolamento por proprietário. Usuários pendentes/suspensos não acessam leituras nem relatórios.
-- Atualizações incrementais: depois do carregamento inicial, o painel busca apenas leituras novas, reduzindo consultas repetidas ao histórico no Firestore.
+- Leituras autenticadas por HTTPS e isolamento por proprietário. Usuários pendentes/suspensos não acessam leituras nem relatórios.
+- Atualizações em tempo real no Spark, com listener Firestore. O backend local mantém consultas incrementais com cursor.
 - Firmware Wi-Fi NodeMCU/ESP8266: veja [as instruções](firmware/esp8266/README.md).
 
-## Configuração e administrador
+## Configuração do backend local e administrador
 
 O Node 24 pode carregar variáveis de um arquivo privado:
 
@@ -37,13 +37,17 @@ O Node 24 pode carregar variáveis de um arquivo privado:
 node --env-file=.env server/index.js
 ```
 
-Use `.env.example` como referência, nunca publique `.env`. Para criar o primeiro administrador, defina `ADMIN_EMAIL`, `ADMIN_PASSWORD` (10 a 128 caracteres) e opcionalmente `ADMIN_NAME` em variáveis seguras do ambiente, então execute `npm run create-admin`. Essas variáveis só são usadas pelo comando de criação. Não há conta administrativa ou senha padrão.
+Use `.env.example` como referência, nunca publique `.env`. Para criar o primeiro administrador, defina `ADMIN_EMAIL`, `ADMIN_PASSWORD` (10 a 128 caracteres) e opcionalmente `ADMIN_NAME` em variáveis seguras do ambiente, então execute `npm run create-admin`. Essas variáveis só são usadas pelo comando de criação. Não há conta administrativa ou senha padrão. O comando acima é apenas para SQLite local; no Spark, use o procedimento de primeiro administrador de FIREBASE.md.
 
 O cadastro público sempre cria usuário comum com assinatura pendente. A API não aceita elevar papel por formulário. A equipe confirma o pagamento e libera o acesso no painel. Sem `CHECKOUT_URL`, a assinatura abre o atendimento pelo WhatsApp original; com uma URL HTTPS válida, abre o checkout definido. Não há processamento de cartão ou renovação automática neste servidor. Uma página de sucesso, por si só, não ativa assinatura.
 
 Recuperação de senha e avisos de contato dependem de `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM` e, quando exigidos pelo provedor, `SMTP_USER` e `SMTP_PASSWORD`. Sem SMTP, contatos ainda são salvos e visíveis para administradores; o site informa que a recuperação está indisponível. Newsletter registra consentimento e inscrições, mas não dispara campanhas automaticamente.
 
-## Publicação e link público
+## Publicação gratuita e link público
+
+Use o procedimento de [FIREBASE.md](FIREBASE.md). Mantenha o projeto no Spark. `npm run firebase:publish` publica apenas Hosting e Firestore, sem habilitar faturamento. A configuração pública é obtida pelo Firebase CLI autenticado. O primeiro administrador é definido no console conforme as instruções. Não há importação automática dos cadastros locais.
+
+## Backend Node opcional em outra hospedagem
 
 Prepare uma hospedagem de **Node.js 24 ou Docker**, com **HTTPS** e **volume persistente**. Railway, Render e serviços equivalentes podem executar o Dockerfile; confirme no provedor a disponibilidade e o custo do volume antes de contratar. Plataformas apenas estáticas não executam este backend, e funções sem disco persistente não preservam este banco SQLite.
 

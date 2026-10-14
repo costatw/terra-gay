@@ -1,11 +1,33 @@
 {
   "indexes": [
-    { "collectionGroup": "readings", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "user_id", "order": "ASCENDING" }, { "fieldPath": "read_at", "order": "DESCENDING" }] },
-    { "collectionGroup": "readings", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "user_id", "order": "ASCENDING" }, { "fieldPath": "created_at", "order": "ASCENDING" }] }
+    {
+      "collectionGroup": "readings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "read_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "readings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    }
   ],
-  "fieldOverrides": [
-    { "collectionGroup": "sessions", "fieldPath": "cleanup_at", "ttl": true, "indexes": [] },
-    { "collectionGroup": "password_resets", "fieldPath": "cleanup_at", "ttl": true, "indexes": [] },
-    { "collectionGroup": "_limits", "fieldPath": "cleanup_at", "ttl": true, "indexes": [] }
-  ]
+  "fieldOverrides": []
 }

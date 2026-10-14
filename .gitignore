@@ -16,3 +16,5 @@ firebase-functions/.secret.local
 *-debug.log
 *.service-account.json
 .firebase-private/
+public/firebase-config.json
+firmware/esp8266/include/terra-private-config.h

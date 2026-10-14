@@ -1,5 +1,9 @@
 import { hashPassword } from './security.js';
 import { createStore } from './store.js';
+if (process.env.STORAGE_BACKEND === 'firestore') {
+  console.error('Na versão Firebase Spark, crie sua conta no site e defina role=admin no documento users/{UID} pelo console, conforme FIREBASE.md. Este comando é para o backend SQLite local.');
+  process.exit(1);
+}
 const store = await createStore();
 // Os valores vêm do ambiente, nunca de argumentos que ficam no histórico do shell.
 const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME = 'Administrador' } = process.env;

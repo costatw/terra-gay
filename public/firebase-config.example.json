@@ -1,0 +1,9 @@
+{
+  "mode": "firebase",
+  "firebase": {
+    "apiKey": "CHAVE_PUBLICA_DO_APLICATIVO_WEB",
+    "authDomain": "terra-nova-a4343.firebaseapp.com",
+    "projectId": "terra-nova-a4343",
+    "appId": "ID_DO_APLICATIVO_WEB"
+  }
+}

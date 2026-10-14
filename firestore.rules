@@ -1,10 +1,87 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // O navegador nao acessa colecoes diretamente. O servidor usa IAM e
-    // verifica sessao, assinatura e proprietario em todas as operacoes.
-    match /{document=**} {
-      allow read, write: if false;
+    function signed() { return request.auth != null; }
+    function me() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function admin() { return signed() && exists(me()) && get(me()).data.role == 'admin'; }
+    function active() { return signed() && exists(me()) && (get(me()).data.role == 'admin' || get(me()).data.subscription_status == 'active'); }
+    function text(v, max) { return v is string && v.size() <= max; }
+    function profile(d) {
+      return d.keys().hasOnly(['full_name','email','role','subscription_status','created_at'])
+        && text(d.full_name, 100) && d.full_name.size() > 0 && text(d.email, 254)
+        && d.role in ['user','admin'] && d.subscription_status in ['pending','active','suspended'] && d.created_at is timestamp;
     }
+    match /users/{uid} {
+      allow get: if signed() && (request.auth.uid == uid || admin());
+      allow list: if admin();
+      allow create: if signed() && request.auth.uid == uid && profile(request.resource.data)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'user' && request.resource.data.subscription_status == 'pending'
+        && request.resource.data.created_at == request.time;
+      allow update: if profile(request.resource.data) && request.resource.data.email == resource.data.email
+        && request.resource.data.created_at == resource.data.created_at
+        && (admin() || (signed() && request.auth.uid == uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['full_name'])));
+      allow delete: if false;
+    }
+    function device(d) {
+      return d.keys().hasOnly(['name','user_id','sender_uid','enabled']) && text(d.name, 100) && d.name.size() > 0
+        && text(d.user_id, 128) && text(d.sender_uid, 128) && d.sender_uid.size() > 0 && d.enabled is bool
+        && exists(/databases/$(database)/documents/users/$(d.user_id));
+    }
+    match /devices/{id} {
+      allow read: if admin() || (active() && resource.data.user_id == request.auth.uid)
+        || (signed() && resource.data.sender_uid == request.auth.uid);
+      allow create: if admin() && id.matches('[A-Za-z0-9_-]{1,80}') && device(request.resource.data);
+      allow update: if admin() && device(request.resource.data);
+      allow delete: if admin();
+    }
+    function number(d, key, min, max) { let v = d.get(key, null); return v == null || (v is number && v >= min && v <= max); }
+    function reading(d) {
+      return d.keys().hasOnly(['device_id','user_id','temperatura','umidade','ph','condutividade','nivel_degradacao','recomendacao','read_at','created_at'])
+        && text(d.device_id, 80) && text(d.user_id, 128)
+        && (d.get('temperatura', null) != null || d.get('umidade', null) != null)
+        && number(d, 'temperatura', -55, 125) && number(d, 'umidade', 0, 100)
+        && number(d, 'ph', 0, 14) && number(d, 'condutividade', 0, 1000)
+        && d.get('nivel_degradacao', null) in [null,'SAUDAVEL','ATENCAO','CRITICO']
+        && (d.get('recomendacao', null) == null || text(d.recomendacao, 1000))
+        && d.read_at is timestamp && d.created_at is timestamp;
+    }
+    function sender(d) {
+      let path = /databases/$(database)/documents/devices/$(d.device_id);
+      return signed() && exists(path) && get(path).data.enabled == true
+        && get(path).data.sender_uid == request.auth.uid && get(path).data.user_id == d.user_id;
+    }
+    match /readings/{id} {
+      allow read: if active() && (admin() || resource.data.user_id == request.auth.uid);
+      allow create: if reading(request.resource.data) && sender(request.resource.data)
+        && request.resource.data.created_at == request.time
+        && request.resource.data.read_at <= request.time + duration.value(5, 'm')
+        && request.resource.data.read_at >= request.time - duration.value(1, 'd');
+      allow update: if admin() && reading(request.resource.data)
+        && request.resource.data.device_id == resource.data.device_id && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.created_at == resource.data.created_at;
+      allow delete: if admin();
+    }
+    function contact(d) {
+      return d.keys().hasOnly(['name','email','phone','organization','profile','subject','preferred_channel','message','kind','consent','created_at'])
+        && text(d.name, 100) && d.name.size() > 0 && text(d.email, 254) && d.email.matches('[^\\s@]+@[^\\s@]+\\.[^\\s@]+')
+        && text(d.get('phone', ''), 100) && text(d.get('organization', ''), 250) && text(d.get('profile', ''), 100)
+        && text(d.get('subject', ''), 250) && text(d.get('preferred_channel', ''), 30) && text(d.get('message', ''), 5000)
+        && d.kind in ['contact','newsletter'] && d.consent == true
+        && (d.kind == 'newsletter' || d.message.size() > 0) && d.created_at == request.time;
+    }
+    match /contacts/{id} {
+      allow create: if contact(request.resource.data);
+      allow read, delete: if admin();
+      allow update: if false;
+    }
+    match /audit/{id} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['actor_id','action','target_id','created_at'])
+        && request.resource.data.actor_id == request.auth.uid && text(request.resource.data.action, 150)
+        && text(request.resource.data.target_id, 128) && request.resource.data.created_at == request.time;
+      allow update, delete: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
   }
 }

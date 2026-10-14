@@ -1,40 +1,28 @@
-# Temperatura e umidade pela rede Wi-Fi
+# ESP8266 por Wi-Fi no plano gratuito Spark
 
-Exemplo adaptado do sketch fornecido para **NodeMCU ESP8266**, DS18B20 em D2 e umidade em A0. Se sua placa for diferente, ajuste o alvo e os pinos antes de gravar.
+O sketch preserva DS18B20 em **D2**, leitura analógica em **A0** e umidade desativada até conexão segura/calibração. A placa presumida é **NodeMCU ESP8266**. Outras placas exigem ajustar pinos e alvo.
 
-1. Publique o servidor com HTTPS e armazenamento persistente.
-2. Defina `SENSOR_API_KEY` no servidor com uma chave aleatória privada de pelo menos 24 caracteres.
-3. Entre como administrador, abra **Sensores** e cadastre `prototype-01`, escolhendo a conta proprietária. Libere a assinatura da conta depois da confirmação do pagamento.
-4. Copie `include/config.example.h` para `include/config.h`. Preencha SSID, senha Wi-Fi, URL pública, a mesma chave privada e identificação do dispositivo. Esse arquivo é ignorado pelo Git.
-5. Configure o certificado raiz PEM do domínio em `ROOT_CA`. `certs/isrg-root-x1.pem` pode ser usado **somente se** o domínio publicado tiver uma cadeia ancorada nessa raiz. Obtenha a raiz correta da autoridade emissora se for outra. O firmware verifica certificado, hostname e validade; não desabilite TLS.
-6. Na pasta `firmware/esp8266`, execute `pio run`, depois `pio run --target upload` com a placa conectada e `pio device monitor` para acompanhar.
+## Preparar
 
-O ESP8266 se conecta a Wi-Fi de **2,4 GHz**. Deve conseguir resolver DNS, acessar o site por HTTPS/443 e sincronizar o relógio por NTP/UDP 123. Não precisa abrir portas no roteador: a placa inicia a conexão de saída.
+1. Publique o site conforme [FIREBASE.md](../../FIREBASE.md) e habilite Authentication por e-mail/senha.
+2. Crie uma **conta exclusiva do sensor** em Authentication → Usuários → Adicionar usuário. Escolha e-mail e senha privados; não use sua conta administrativa. Copie o UID dessa conta.
+3. No painel administrativo do site, abra **Sensores** e cadastre `prototype-01`. Escolha a conta proprietária das leituras e informe o UID exclusivo do sensor. Libere a assinatura do proprietário quando apropriado.
+4. Copie `include/config.example.h` para **`include/terra-private-config.h`**, ignorado pelo Git. Preencha Wi-Fi, projeto, chave pública Web do Firebase, e-mail/senha exclusivos do sensor e identificação. Não publique esse arquivo.
+5. Na pasta da placa, rode `pio run`, depois `pio run --target upload` e `pio device monitor` com a placa conectada.
 
-O envio é tentado a cada 30 segundos. Se cair a rede, há reconexão automática e nova tentativa no próximo ciclo; esta versão não mantém uma fila offline. O site consulta novas leituras a cada 5 segundos.
+`config.h` não é usado nesta versão: esse nome também existe em bibliotecas, e o nome exclusivo evita incluir um arquivo errado. Preserve configurações antigas e transfira apenas os valores necessários para o novo modelo.
 
-`UMIDADE_CONECTADA` permanece `false`, como no seu sketch. Verifique a faixa de tensão admitida em A0 **da sua placa** antes de conectar AOUT; ela pode diferir entre o ESP8266 nu e placas com divisor de tensão. Depois de conectar com segurança, calibre `VALOR_SECO` e `VALOR_UMIDO` e habilite a leitura. Sem calibração, só a temperatura é enviada. Sensores ausentes não geram valores inventados. pH e condutividade só serão exibidos se equipamentos apropriados enviarem esses indicadores.
+## Funcionamento
 
-O servidor aceita:
+- Wi-Fi **2,4 GHz**, acesso de saída HTTPS/443 a `identitytoolkit.googleapis.com`, `securetoken.googleapis.com` e `firestore.googleapis.com`, além de DNS e NTP/UDP 123.
+- O firmware sincroniza o relógio, valida certificado/hostname HTTPS, faz login e renova tokens expirados. Não imprime credenciais ou tokens.
+- As raízes públicas Google Trust Services estão em `google-roots.h`; a verificação TLS permanece habilitada. Atualize as raízes por uma fonte confiável se a cadeia do serviço mudar.
+- Busca o vínculo do dispositivo e envia uma escrita Firestore com `created_at` gerado pelo servidor. As regras limitam o UID do sensor a esse dispositivo e proprietário.
+- Envio inicial quando a rede/relógio estiverem prontos; depois, a cada **10 minutos**. Isso equivale a 144 registros/dia por sensor. Conta/plano gratuitos têm cotas compartilhadas; monitore o uso no console. Esta versão não armazena uma fila offline.
+- Se perder a rede, reconecta e tenta quando houver conectividade. Se o cadastro tiver `enabled=false`, não envia. Para bloquear um sensor, edite essa propriedade no Firestore.
 
-```http
-POST /functions/receiveSensorData
-Content-Type: application/json
-x-sensor-api-key: SUA_CHAVE_PRIVADA
-```
+## Calibração
 
-```json
-{
-  "device_id": "prototype-01",
-  "temperatura": 24.8,
-  "umidade": 45.2
-}
-```
+Mantenha `UMIDADE_CONECTADA=false` enquanto AOUT estiver desconectado. Verifique a faixa de tensão admitida em A0 **da sua placa** antes da ligação; placas e chips podem ter faixas diferentes. Depois, preencha `VALOR_SECO` e `VALOR_UMIDO` com suas leituras reais e habilite a umidade. Sem calibração, só a temperatura válida é enviada. pH e condutividade não são inventados.
 
-`POST /api/sensor/readings` é um alias. `read_at` é opcional: sem ele, o servidor registra o horário de recebimento. `ph`, `condutividade`, `nivel_degradacao` e `recomendacao` também são opcionais. O servidor não infere degradação apenas de temperatura e umidade.
-
-Respostas: **201** recebida; **401** chave inválida; **404** sensor não cadastrado; **400** indicador/data inválidos; **503** integração ainda não configurada.
-
-A chave compartilhada permite ingestão para os sensores cadastrados. Mantenha-a privada, rotacione se exposta e não a coloque em formulários, navegador ou Git. Antes de crescer para vários clientes, evolua para credenciais individuais por dispositivo.
-
-Compilação pode ser validada na nuvem; a conexão Wi-Fi e os sensores físicos precisam ser testados na sua placa e rede.
+O firmware foi compilado para NodeMCU ESP8266. O protocolo REST autenticado foi exercitado no emulador Firestore. Gravação, TLS contra o serviço público e leituras físicas precisam ser confirmadas na placa e na sua rede.
